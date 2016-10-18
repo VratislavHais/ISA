@@ -1,6 +1,6 @@
 CC = g++ 
 NAME = ISA.cpp
-RESULT = isa
+RESULT = appdetector
 LOGIN = xhaisv00
 FILES = Makefile ISA.cpp
 
