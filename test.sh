@@ -1,0 +1,1 @@
+./appdetector -i 60 -s 000F:FFFF:FFFF:FFFF:FFFF:FFFF:4559:1FE2 -f chrome
