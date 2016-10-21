@@ -8,6 +8,10 @@ using namespace std;
 #include <sstream>
 #include <ctype.h>
 #include <vector>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 
 /*
 	struktura uchovavajici hodnoty argumentu	
@@ -208,23 +212,82 @@ int argParse(int argc, char **argv, ARGS &args) {
 	return EXIT_SUCCESS;
 }
 
+/*
+	funkce na vytvoreni socketu
+*/
+
+int connect(string ipstr, int *sock) {
+	struct in_addr ip;
+	struct sockaddr_in sockaddr;
+	struct hostent *host;
+	*sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (*sock <= 0) {
+		cerr << "chyba inicializa socketu\n";
+		return EXIT_FAILURE;
+	}
+	if (!inet_aton(ipstr.c_str(), &ip)) {
+		cerr << "Nelze parsovat IP\n";
+	}
+	sockaddr.sin_family = AF_INET;
+	sockaddr.sin_port = 514;
+	host = gethostbyaddr((const void*)&ip, sizeof ip, AF_INET);
+	bcopy((char *)host->h_addr, (char *)&sockaddr.sin_addr.s_addr, host->h_length);
+	if ((connect(*sock, (const struct sockaddr *) &sockaddr, sizeof(sockaddr)) < 0)) {
+		cerr << "chyba pripojeni\n";
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+/*
+	ze stringu vybere 1 radek, ktery z puvodniho stringu vymaze a vrati jako navratovou hodnotu
+*/
+
+string getLine(string *str) {
+	size_t index;
+	string line;
+	index = (*str).find("\n");
+	if (index != string::npos) {
+		line = (*str).substr(0, index);
+	}
+	else {
+		line = (*str);
+	}
+	(*str).erase(0, index+1);
+	return line;
+}
+
 int main(int argc, char *argv[]) {
+	int sock;
+	char buff[512];
+	string str = "";
 	ARGS args;
+	vector<string> result;
+	vector<string> toProcess;
+	FILE *in;
 	if (argParse(argc, argv, args)) {
 		return EXIT_FAILURE;
 	}
+	/*if (connect(args.ipAddress, &sock)) {
+		return EXIT_FAILURE;
+	}*/
 	string command = "lsof -Pnl +M -i | grep ESTABLISHED | grep ";
 	command += args.filter;  // pridani filtru na pozadovane aplikace 
 	command += " | tr -s \" \" | cut -d\" \" -f 8,9,1 | awk '{ print $2 \" \" $3 \" \" $1}'";  // vyber pozadovanych sloupcu (nazev appky, IP, protokol) + prehazeni v pozadovanem poradi
 	command += " | sed -r \"s/\\]|\\[|\\->/ /g\" | ";  // odmazani prebytecnych znaku + rozdeleni portu od IP v IPv6
 	command += "sed -r \"s/\\.[[:digit:]]+:/ /g\" | "; // rozdeleni portu od IP v IPv4
 	command += "sed -r \"s/ :/ /g\" | tr -s \" \"";
-	FILE *in = popen(command.c_str(), "r");
-	char buff[512];
-	string test = "";
+	
+	//zde bude nekonecny cyklus
+	in = popen(command.c_str(), "r");
 	while(fgets(buff, sizeof(buff), in) != NULL){
-        test += buff;
+        str += buff;
     }
-    cout << test;
+    while (strcmp(str.c_str(), "")) {
+    	toProcess.push_back(getLine(&str));
+    }
+    for (int i = 0; i < toProcess.size(); i++) {
+    	cout << toProcess[i];
+    }
 	return EXIT_SUCCESS;
 }
