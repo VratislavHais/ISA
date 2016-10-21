@@ -12,6 +12,7 @@ using namespace std;
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <unistd.h>
 
 /*
 	struktura uchovavajici hodnoty argumentu	
@@ -21,6 +22,7 @@ typedef struct arguments {
 	string ipAddress;
 	int interval;
 	string filter;
+	bool ipv4;
 } ARGS;
 
 /*
@@ -128,12 +130,13 @@ int checkIPv6(string ip) {
 	funkce rozhodne, zda se jedna o IPv4 nebo IPv6 a podle toho zavola funkci na kontrolu IP
 */
 
-int checkIp(string ip) {
+int checkIp(string ip, ARGS &args) {
 	if (ip.find(".") != string::npos) {
 		if (checkIPv4(ip)) {
 			return EXIT_FAILURE;
 		}
 		else {
+			args.ipv4 = true;
 			return EXIT_SUCCESS;
 		}
 	}
@@ -142,6 +145,7 @@ int checkIp(string ip) {
 			return EXIT_FAILURE;
 		}
 		else {
+			args.ipv4 = false;
 			return EXIT_SUCCESS;
 		}
 	}
@@ -163,7 +167,7 @@ int argParse(int argc, char **argv, ARGS &args) {
 				return EXIT_FAILURE;
 			}
 			sIsSet = true;
-			if (checkIp(argv[++i])) {
+			if (checkIp(argv[++i], args)) {
 				cerr << "Spatne zadana IP adresa!\n";
 				return EXIT_FAILURE;
 			}
@@ -216,21 +220,43 @@ int argParse(int argc, char **argv, ARGS &args) {
 	funkce na vytvoreni socketu
 */
 
-int connect(string ipstr, int *sock) {
+int connect(string ipstr, int *sock, bool ipv4) {
 	struct in_addr ip;
 	struct sockaddr_in sockaddr;
 	struct hostent *host;
-	*sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (ipv4) {
+		*sock = socket(AF_INET, SOCK_STREAM, 0);
+	}
+	else {
+		*sock = socket(AF_INET6, SOCK_STREAM, 0);
+	}
 	if (*sock <= 0) {
 		cerr << "chyba inicializa socketu\n";
 		return EXIT_FAILURE;
 	}
-	if (!inet_aton(ipstr.c_str(), &ip)) {
-		cerr << "Nelze parsovat IP\n";
+	if (ipv4) {
+		if (!inet_pton(AF_INET, ipstr.c_str(), &ip)) {
+			cerr << "Nelze parsovat IP\n";
+		}
 	}
-	sockaddr.sin_family = AF_INET;
+	else {
+		if (!inet_pton(AF_INET6, ipstr.c_str(), &ip)) {
+			cerr << "Nelze parsovat IP\n";
+		}
+	}
+	if (ipv4) {
+		sockaddr.sin_family = AF_INET;
+	}
+	else {
+		sockaddr.sin_family = AF_INET6;
+	}
 	sockaddr.sin_port = 514;
-	host = gethostbyaddr((const void*)&ip, sizeof ip, AF_INET);
+	if (ipv4) {
+		host = gethostbyaddr((const void*)&ip, sizeof ip, AF_INET);
+	}
+	else {
+		host = gethostbyaddr((const void*)&ip, sizeof ip, AF_INET6);
+	}
 	bcopy((char *)host->h_addr, (char *)&sockaddr.sin_addr.s_addr, host->h_length);
 	if ((connect(*sock, (const struct sockaddr *) &sockaddr, sizeof(sockaddr)) < 0)) {
 		cerr << "chyba pripojeni\n";
@@ -258,7 +284,7 @@ string getLine(string *str) {
 }
 
 int main(int argc, char *argv[]) {
-	int sock;
+	int sock, resIndex, index;
 	char buff[512];
 	string str = "";
 	ARGS args;
@@ -268,26 +294,51 @@ int main(int argc, char *argv[]) {
 	if (argParse(argc, argv, args)) {
 		return EXIT_FAILURE;
 	}
-	/*if (connect(args.ipAddress, &sock)) {
+	/*if (connect(args.ipAddress, &sock, args.ipv4)) {
 		return EXIT_FAILURE;
 	}*/
 	string command = "lsof -Pnl +M -i | grep ESTABLISHED | grep ";
 	command += args.filter;  // pridani filtru na pozadovane aplikace 
 	command += " | tr -s \" \" | cut -d\" \" -f 8,9,1 | awk '{ print $2 \" \" $3 \" \" $1}'";  // vyber pozadovanych sloupcu (nazev appky, IP, protokol) + prehazeni v pozadovanem poradi
 	command += " | sed -r \"s/\\]|\\[|\\->/ /g\" | ";  // odmazani prebytecnych znaku + rozdeleni portu od IP v IPv6
-	command += "sed -r \"s/\\.[[:digit:]]+:/ /g\" | "; // rozdeleni portu od IP v IPv4
-	command += "sed -r \"s/ :/ /g\" | tr -s \" \"";
-	
-	//zde bude nekonecny cyklus
-	in = popen(command.c_str(), "r");
-	while(fgets(buff, sizeof(buff), in) != NULL){
-        str += buff;
-    }
-    while (strcmp(str.c_str(), "")) {
-    	toProcess.push_back(getLine(&str));
-    }
-    for (int i = 0; i < toProcess.size(); i++) {
-    	cout << toProcess[i];
-    }
+	command += "sed -r \"s/(\\.[[:digit:]]+):/\\1 /g\" | "; // rozdeleni portu od IP v IPv4
+	command += "sed -r \"s/ :/ /g\" | tr -s \" \" | uniq -u";
+	while (1) {
+		in = popen(command.c_str(), "r");
+		while(fgets(buff, sizeof(buff), in) != NULL){
+	        str += buff;
+	    }
+	    while (strcmp(str.c_str(), "")) {
+	    	toProcess.push_back(getLine(&str));
+	    }
+	    resIndex = result.size();
+	    if (resIndex == 0) {	// prvni pruchod nebo v predchozim pruchodu nebylo zadne spojeni => muzeme naplnit pole bez jakekoliv kontroly
+	    	for (int i = 0; i < toProcess.size(); i++) {
+	    		result.push_back(toProcess[i]);
+	    	}
+	    }
+	    else {
+	    	for (; resIndex <= 0; resIndex--) {
+	    		for (index = 0; index < toProcess.size(); index++) {
+	    			if (!result[resIndex].compare(toProcess[index])) {
+	    				toProcess.erase(toProcess.begin() + index);
+	    				index = 0;
+	    				break;
+	    			}
+	    		}
+	    		if (index == (toProcess.size() + 1)) {		// proslo se cele pole a prave kontrolovana komunikace nebyla nalezena => byla ukoncena
+	    			result.erase(result.begin() + resIndex);
+	    		}
+	    	}
+	    	for (index = 0; index < toProcess.size(); index++) {	// nyni vlozime zaznamy o nove komunikaci
+	    		result.push_back(toProcess[index]);
+	    	}
+	    }
+	    // vypis na stdout
+	    for (int i = 0; i < result.size(); i++) {
+	    	cout << result[i] << endl;
+	    }
+	    sleep(args.interval);
+	}
 	return EXIT_SUCCESS;
 }
