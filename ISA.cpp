@@ -37,9 +37,10 @@ void help() {
 	cout << "-f filtr - (povinny parametr) seznam aplikaci, ktere chceme detekovat. Seznam ma tvar app,app,app,... kde app je nazev aplikace skladajici se z tisknutelnych ASCII znaku. Napr \"vlc\" nebo \"vlc,firefox\", ...\n";
 }
 
-/*
-	funkce overujici, zda se retezec sklada pouze z cisel
-*/
+/**
+ *	funkce overujici, zda se retezec sklada pouze z cisel
+ *  @str - string obsahujici retezec, ktery testujeme zda obsahuje pouze cislice 
+**/
 
 bool isNum(string str) {
 	for (unsigned int i = 0; i < str.size(); i++) {
@@ -50,9 +51,10 @@ bool isNum(string str) {
 	return true;
 }
 
-/*
-	funkce overujici, zda se retezec sklada pouze z hexadecimalnich znaku (0-9, a-f)
-*/
+/**
+ *	funkce overujici, zda se retezec sklada pouze z hexadecimalnich znaku (0-9, a-f)
+ *	@str - string obsahujici retezec, ktery testujeme zda obsahuje pouze hexadecimalni znaky 
+**/
 
 bool isHexa(string str) {
 	for (unsigned int i = 0; i < str.size(); i++) {
@@ -63,9 +65,10 @@ bool isHexa(string str) {
 	return true;
 }
 
-/*
-	funkce na kontrolu spravne zadane IPv4
-*/
+/**
+ *	funkce na kontrolu spravne zadane IPv4
+ *	@ip - string obsahujici IP adresu, u ktere budeme kontrolovat validitu
+**/
 
 int checkIPv4(string ip) {
 	size_t index;
@@ -85,9 +88,10 @@ int checkIPv4(string ip) {
 	return EXIT_SUCCESS;
 }
 
-/*
-	funkce na kontrolu spravne zadane IPv6
-*/
+/**
+ *	funkce na kontrolu spravne zadane IPv6
+ *	@ip - string obsahujici IP adresu, u ktere budeme kontrolovat validitu
+**/
 
 int checkIPv6(string ip) {
 	size_t index;
@@ -126,9 +130,11 @@ int checkIPv6(string ip) {
 }
 
 
-/*
-	funkce rozhodne, zda se jedna o IPv4 nebo IPv6 a podle toho zavola funkci na kontrolu IP
-*/
+/**
+ *	funkce rozhodne, zda se jedna o IPv4 nebo IPv6 a podle toho zavola funkci na kontrolu IP
+ *	@ip - string, ktery obsahuje IP adresu, u ktere se bude kontrolovat validita
+ *	@args - struktura, do ktere ulozime, zda se jedna o IPv4 nebo IPv6
+**/
 
 int checkIp(string ip, ARGS &args) {
 	if (ip.find(".") != string::npos) {
@@ -154,9 +160,12 @@ int checkIp(string ip, ARGS &args) {
 	}
 }
 
-/*
-	funkce na zpracovani argumentu
-*/
+/**
+ *	funkce na zpracovani argumentu
+ *	@argc - pocet zadanych argumentu
+ *	@argv - pole obsahujici jednotlive argumenty
+ *	@args - struktura, do ktere budeme ukladat hodnoty argumentu
+**/
 
 int argParse(int argc, char **argv, ARGS &args) {
 	bool sIsSet = false, iIsSet = false, fIsSet = false;
@@ -216,9 +225,12 @@ int argParse(int argc, char **argv, ARGS &args) {
 	return EXIT_SUCCESS;
 }
 
-/*
-	funkce na vytvoreni socketu
-*/
+/**
+ *	funkce na vytvoreni socketu
+ *	@ipstr - string obsahujici ip adresu
+ *	@sock - ukazatel na promennou vytvorenou ve funkci main, do ktere se ulozi socket
+ *	@ipv4 - booleovska promenna, ktera nabyva true, pokud se jedna o IPv4
+**/
 
 int connection(string ipstr, int *sock, bool ipv4) {
 	struct in_addr ip;
@@ -268,9 +280,10 @@ int connection(string ipstr, int *sock, bool ipv4) {
 	return EXIT_SUCCESS;
 }
 
-/*
-	ze stringu vybere 1 radek, ktery z puvodniho stringu vymaze a vrati jako navratovou hodnotu
-*/
+/**
+ *	ze stringu vybere 1 radek, ktery z puvodniho stringu vymaze a vrati jako navratovou hodnotu
+ *	@str - string obsahujici vysledek operace lsof
+**/
 
 string getLine(string *str) {
 	size_t index;
@@ -291,8 +304,8 @@ int main(int argc, char *argv[]) {
 	char buff[512];
 	string str = "";
 	ARGS args;
-	vector<string> result;
-	vector<string> toProcess;
+	vector<string> result;		// pole na ukladani vysledku. Pomoci tohoto pole se bude kontrolovat, ktere pripojeni jiz bylo vypsano
+	vector<string> toProcess;	// pole na ukladani vysledku prikazu v promenne command
 	FILE *in;
 	if (argParse(argc, argv, args)) {
 		return EXIT_FAILURE;
@@ -314,7 +327,8 @@ int main(int argc, char *argv[]) {
 	    while (strcmp(str.c_str(), "")) {
 	    	toProcess.push_back(getLine(&str));
 	    }
-	    resIndex = toSend = result.size() - 1;
+	    resIndex = result.size() - 1;
+	    toSend = result.size();
 	    if (resIndex == 0) {	// prvni pruchod nebo v predchozim pruchodu nebylo zadne spojeni => muzeme naplnit pole bez jakekoliv kontroly
 	    	for (int i = 0; i < toProcess.size(); i++) {
 	    		result.push_back(toProcess[i]);
