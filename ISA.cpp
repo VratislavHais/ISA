@@ -220,7 +220,7 @@ int argParse(int argc, char **argv, ARGS &args) {
 	funkce na vytvoreni socketu
 */
 
-int connect(string ipstr, int *sock, bool ipv4) {
+int connection(string ipstr, int *sock, bool ipv4) {
 	struct in_addr ip;
 	struct sockaddr_in sockaddr;
 	struct hostent *host;
@@ -231,7 +231,7 @@ int connect(string ipstr, int *sock, bool ipv4) {
 		*sock = socket(AF_INET6, SOCK_STREAM, 0);
 	}
 	if (*sock <= 0) {
-		cerr << "chyba inicializa socketu\n";
+		cerr << "Chyba inicializace socketu\n";
 		return EXIT_FAILURE;
 	}
 	if (ipv4) {
@@ -250,14 +250,17 @@ int connect(string ipstr, int *sock, bool ipv4) {
 	else {
 		sockaddr.sin_family = AF_INET6;
 	}
-	sockaddr.sin_port = 514;
+	sockaddr.sin_port = htons(514);
 	if (ipv4) {
 		host = gethostbyaddr((const void*)&ip, sizeof ip, AF_INET);
 	}
 	else {
 		host = gethostbyaddr((const void*)&ip, sizeof ip, AF_INET6);
 	}
-	bcopy((char *)host->h_addr, (char *)&sockaddr.sin_addr.s_addr, host->h_length);
+	if (host == NULL) {
+			cerr << "Neco se porouchalo\n";
+	}
+	memcpy (&sockaddr.sin_addr, host->h_addr, host->h_length);
 	if ((connect(*sock, (const struct sockaddr *) &sockaddr, sizeof(sockaddr)) < 0)) {
 		cerr << "chyba pripojeni\n";
 		return EXIT_FAILURE;
@@ -284,7 +287,7 @@ string getLine(string *str) {
 }
 
 int main(int argc, char *argv[]) {
-	int sock, resIndex, index;
+	int sock, resIndex, index, toSend;
 	char buff[512];
 	string str = "";
 	ARGS args;
@@ -294,9 +297,9 @@ int main(int argc, char *argv[]) {
 	if (argParse(argc, argv, args)) {
 		return EXIT_FAILURE;
 	}
-	/*if (connect(args.ipAddress, &sock, args.ipv4)) {
+	if (connection(args.ipAddress, &sock, args.ipv4)) {
 		return EXIT_FAILURE;
-	}*/
+	}
 	string command = "lsof -Pnl +M -i | grep ESTABLISHED | grep ";
 	command += args.filter;  // pridani filtru na pozadovane aplikace 
 	command += " | tr -s \" \" | cut -d\" \" -f 8,9,1 | awk '{ print $2 \" \" $3 \" \" $1}'";  // vyber pozadovanych sloupcu (nazev appky, IP, protokol) + prehazeni v pozadovanem poradi
@@ -311,16 +314,16 @@ int main(int argc, char *argv[]) {
 	    while (strcmp(str.c_str(), "")) {
 	    	toProcess.push_back(getLine(&str));
 	    }
-	    resIndex = result.size();
+	    resIndex = toSend = result.size() - 1;
 	    if (resIndex == 0) {	// prvni pruchod nebo v predchozim pruchodu nebylo zadne spojeni => muzeme naplnit pole bez jakekoliv kontroly
 	    	for (int i = 0; i < toProcess.size(); i++) {
 	    		result.push_back(toProcess[i]);
 	    	}
 	    }
 	    else {
-	    	for (; resIndex <= 0; resIndex--) {
+	    	for (; resIndex >= 0; resIndex--) {
 	    		for (index = 0; index < toProcess.size(); index++) {
-	    			if (!result[resIndex].compare(toProcess[index])) {
+	    			if (result[resIndex].compare(toProcess[index]) == 0) {
 	    				toProcess.erase(toProcess.begin() + index);
 	    				index = 0;
 	    				break;
@@ -328,15 +331,20 @@ int main(int argc, char *argv[]) {
 	    		}
 	    		if (index == (toProcess.size() + 1)) {		// proslo se cele pole a prave kontrolovana komunikace nebyla nalezena => byla ukoncena
 	    			result.erase(result.begin() + resIndex);
+	    			toSend--;
 	    		}
 	    	}
 	    	for (index = 0; index < toProcess.size(); index++) {	// nyni vlozime zaznamy o nove komunikaci
 	    		result.push_back(toProcess[index]);
 	    	}
 	    }
-	    // vypis na stdout
-	    for (int i = 0; i < result.size(); i++) {
-	    	cout << result[i] << endl;
+	    // vypis
+	    for (; toSend < result.size(); toSend++) {
+	    	if ((send(sock, result[toSend].c_str(), result[toSend].length(), 0)) < 0) {
+				cerr << "chyba odesilani zpravy\n";
+				return EXIT_FAILURE;
+			}
+	    	cout << result[toSend] << endl;
 	    }
 	    sleep(args.interval);
 	}
