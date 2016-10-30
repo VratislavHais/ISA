@@ -302,6 +302,7 @@ string getLine(string *str) {
 int main(int argc, char *argv[]) {
 	int sock, resIndex, index, toSend;
 	char buff[512];
+	bool found;
 	string str = "";
 	ARGS args;
 	vector<string> result;		// pole na ukladani vysledku. Pomoci tohoto pole se bude kontrolovat, ktere pripojeni jiz bylo vypsano
@@ -329,27 +330,28 @@ int main(int argc, char *argv[]) {
 	    }
 	    resIndex = result.size() - 1;
 	    toSend = result.size();
-	    if (resIndex == 0) {	// prvni pruchod nebo v predchozim pruchodu nebylo zadne spojeni => muzeme naplnit pole bez jakekoliv kontroly
+	    if (resIndex < 0) {	// prvni pruchod nebo v predchozim pruchodu nebylo zadne spojeni => muzeme naplnit pole bez jakekoliv kontroly
 	    	for (int i = 0; i < toProcess.size(); i++) {
 	    		result.push_back(toProcess[i]);
 	    	}
 	    }
 	    else {
 	    	for (; resIndex >= 0; resIndex--) {
+	    		found = false;
 	    		for (index = 0; index < toProcess.size(); index++) {
 	    			if (result[resIndex].compare(toProcess[index]) == 0) {
 	    				toProcess.erase(toProcess.begin() + index);
-	    				index = 0;
-	    				break;
+	    				index--;
+	    				found = true;
 	    			}
 	    		}
-	    		if (index == (toProcess.size() + 1)) {		// proslo se cele pole a prave kontrolovana komunikace nebyla nalezena => byla ukoncena
+	    		if (!found) {		// proslo se cele pole a prave kontrolovana komunikace nebyla nalezena => byla ukoncena
 	    			result.erase(result.begin() + resIndex);
 	    			toSend--;
 	    		}
 	    	}
-	    	for (index = 0; index < toProcess.size(); index++) {	// nyni vlozime zaznamy o nove komunikaci
-	    		result.push_back(toProcess[index]);
+	    	for (int i = 0; i < toProcess.size(); i++) {	// nyni vlozime zaznamy o nove komunikaci
+	    		result.push_back(toProcess[i]);
 	    	}
 	    }
 	    // vypis
