@@ -221,6 +221,7 @@ int argParse(int argc, char **argv, ARGS &args) {
 	}
 	if (!sIsSet || !iIsSet || !fIsSet) {
 		cerr << "Nebyl zadan povinny argument\n";
+		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
 }
