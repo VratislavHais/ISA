@@ -300,6 +300,26 @@ string getLine(string *str) {
 	return line;
 }
 
+/**
+ *  funkce na overeni, zda se jedna o pripojeni localhostu
+ *  @str - string obsahujici radek s podrobnosti o pripojeni
+**/
+
+bool isLocalhost(string str) {
+	size_t spaceIndex, secondSpaceIndex;
+	spaceIndex = str.find(" ");
+	secondSpaceIndex = str.find(" ", spaceIndex);
+	if (!strcmp(str.substr(spaceIndex, secondSpaceIndex).c_str(), "127.0.0.1")) {
+	    return true;
+	}
+	spaceIndex = str.find(" ", secondSpaceIndex);
+	secondSpaceIndex = str.find(" ", spaceIndex);
+	if (!strcmp(str.substr(spaceIndex, secondSpaceIndex).c_str(), "127.0.0.1")) {
+	    return true;
+	}
+	return false;
+}
+
 int main(int argc, char *argv[]) {
 	int sock, resIndex, index, toSend;
 	char buff[512];
@@ -333,6 +353,9 @@ int main(int argc, char *argv[]) {
 	    toSend = result.size();
 	    if (resIndex < 0) {	// prvni pruchod nebo v predchozim pruchodu nebylo zadne spojeni => muzeme naplnit pole bez jakekoliv kontroly
 	    	for (int i = 0; i < toProcess.size(); i++) {
+	    		if (isLocalhost(toProcess[i])) {
+	    			continue;
+	    		}
 	    		result.push_back(toProcess[i]);
 	    	}
 	    }
@@ -340,7 +363,7 @@ int main(int argc, char *argv[]) {
 	    	for (; resIndex >= 0; resIndex--) {
 	    		found = false;
 	    		for (index = 0; index < toProcess.size(); index++) {
-	    			if (result[resIndex].compare(toProcess[index]) == 0) {
+	    			if (result[resIndex].compare(toProcess[index]) == 0 || isLocalhost(toProcess[index])) {
 	    				toProcess.erase(toProcess.begin() + index);
 	    				index--;
 	    				found = true;
