@@ -1,0 +1,191 @@
+\documentclass[a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[main=czech,english]{babel}
+\usepackage{graphicx}
+\usepackage{xspace}
+\usepackage{listigns}
+\DeclareUnicodeCharacter{00A0}{ }
+
+\title{Detekce aplikaci tvorici sitovy provoz}
+\date{2016-11-14}
+\author{Vratislav Hais, xhaisv00@stud.fit.vutbr.cz}
+
+\begin{document}
+
+	\pagenumbering{gobble}
+
+	\begin{center}
+		\begin{figure}[t!]
+			\centering
+			\includegraphics[width=\linewidth]{VUT_logo.png}
+			\vspace{1in}
+		\end{figure}
+
+		\begin{center}
+			\large
+			\textsc{Vysoke Uceni Technicke v Brne}
+			\textsc{Fakulta Informacnich Technologii}
+			\vspace{2in}
+		\end{center}
+		{
+			\huge
+			Detekce aplikaci tvorici sitovy provoz
+		}
+	\end{center}
+
+	\vspace*{\fill}
+	{
+		\large
+		\foreignlanguage{english}{Autor: Vratislav Hais, xhaisv00}
+	}
+
+
+	\newpage
+	\pagenumbering{arabic}
+	\tableofcontents
+	\newpage
+
+	\section{Uvod}
+
+	Tento dokument byl vytvoren jako dokumentace k projektu do predmetu ISA (Sitove aplikace a sprava siti).
+	Zakladem programu je pouziti prikazu lsof (\emph{lsof -Pnl +M -i}). Vysledek lsofu je pomoci shellovskych prikazu a regularnich vyrazu zpracovan do pozadovaneho tvaru, ktery se bude posilat na syslog server. Komunikace se syslog serverem je zajistena pomoci BSD socketu. Poslane zpravy jsou kontrolovany utilitou netcat (\emph{nc -l -p514}).
+
+	\section{BSD}
+
+	BSD sockety jsou API pro komunikujici procesy. Jedna se o abstraktni datovou strukturu obsahujici potrebne udaje pro komunikaci. Pro vytvoreni socketu je potreba znat IP adresu a port, na kterem bude provadena komunikace.
+
+	\subsection{Funkce pro praci s BSD sockety}
+
+	\begin{itemize}
+	\item socket() - vytvoreni noveho socketu. Je mozne vytvorit ruzne druhy socketu, coz se upresnuje v parametru funkce
+	\item bind() - prideli adresu specifikovanou v \emph{addr} k socketu. Tradicne se teto operaci prezdiva "pojmenovani socketu"
+	\item listen() - pouzivano na strane serveru. Prepne TCP socket do naslouchaciho modu
+	\item accept() - pouzivano na strane serveru. Prijme obdrzeny pokus o pripojeni
+	\item connect() - pouzivano na strane klienta. Prideli socketu volny port. V pripade TCP socketu se pokusi o navazani spojeni
+	\item send(), sendto(), recv(), recvfrom(), write(), read() - pouzivaji se pro posilani/prijimani dat
+	\item close() - v pripade TCP socketu ukonci spojeni. V jinem pripade uvolni systemem pridelenou pamet
+	\item gethostbyname(), gethostbyaddr() - na zaklade jmena/ip adresy vraci informace potrebne k naplneni struktury \emph{hostent} potrebne k navazani spojeni
+	\item select() - cekani na 1 nebo vic poskytnutych socketu az budou pripraveny ke cteni, zapisu nebo zda maji error
+	\item getsockopt() - vraci hodnotu pozadovaneho prepinace zadaneho socketu
+	\item setsockopt() - nastavi pozadovanou hodnotu prepinace zadaneho socketu
+	\end{itemize}
+
+	\section{Syslog}
+
+	Syslog je standard pro záznam programových zpráv. Umožňuje oddělit:
+	\begin{itemize}
+	\item software generující zprávy
+	\item od systému, který je ukládá
+	\item softwaru, jenž poskytuje reporty a analýzy.
+	\end{itemize}
+
+	\section{lsof}
+
+	\emph{lsof} je prikaz vypisujici seznam vsech otevrenych souboru, procesu a pripojeni.
+
+	\section{netcat}
+
+	Prikaz \emph{netcat} (nebo take \emph{nc}) je počítačoý program sloužící jako nástroj pro zápis a čtení ze TCP nebo UDP spojení.
+
+	\section{Implementace}
+
+	Aplikace je naprogramovana v jazyce C++ a je spustitelna na operacnim systemu Linux.
+
+	\subsection{Argumenty}
+
+	Uzivatel muze spustit aplikaci s libovolnym poradim argumentu. Toho je docileno cyklem, ktery zjistuje, o ktery argument se momentalne jedna a ulozi nasledujici hodnotu do struktury s argumenty. Pred ulozenim do struktury se kontroluje validita hodnoty, tzn ze zda se opravdu jedna o cislo (v pripade prepinace -i) nebo IP adresu (v pripade prepinace -s).
+	\begin{itemize}
+		\item -s parametr nasledovan IP adresou urcuje, na jake adrese bezi syslog server
+		\item -f parametr nasledovan retezcem obsahujicim nazvy aplikaci, ktere ma uzivatel zajem sledovat
+		\item -i parametr nasledovan cislem urcuje, v jakem intervalu se bude aktualizovat vypis
+		\item -h, --help je samostatny parametr, ktery vypise napovedu k programu
+	\end{itemize}
+	Parametry -s, -f, -i jsou povinne. Pokud uzivatel nezada nektery z nich, tak se program ukonci s chybou.
+
+	\subsection{funkce isNum() a isHexa()}
+
+	Pomocne funkce slouzici pro kontrolu, zda je zkoumany retezec slozen z cisel desitkove soustavy (funkce isNum()) nebo z hexadecimalnich znaku (funkce isHexa())
+
+	\subsection{funkce checkIp()}
+
+	Jedna se o pomocnou funkci pri kontrole argumentu. Kdyz se kontroluje prepinac -s, zavola se tato funkce a preda se ji hodnota nasledovana za prepinacem. Funkce rozhodne, zda se jedna o IPv4 nebo IPv6, nastavi priznak ve strukture a podle vysledku zavola funkci checkIPv4() nebo checkIPv6(). Tyto funkce zkontroluji validitu zadane IP adresy. Pokud je adresa validni, tak se ulozi do struktury a pokracuje se zpracovavanim ostatnich argumentu.
+
+	\subsection{funkce connection()}
+
+	Funkce obstaravajici pripojeni k syslog serveru. Funkce vytvori socket, ktery se bude pouzivat k posilani dat na syslog server.
+
+	\subsection{funkce getLine()}
+
+	Pomocna funkce, ktera vraci prvni radek ze zadaneho retezce. Funkce je destruktivni, tudiz je vraceny radek zaroven z puvodniho retezce vymazan.
+
+	\subsection{funkce isLocalhost()}
+
+	Funkce zkouma, zda je v zadanem retezci vyskyt localhostu. Pokud ano, vraci hodnotu true.
+
+	\subsection{funkce main()}
+
+	Zde se odehrava veskera cinnost. Na zacatku funkce se vytvori retezec, ktery za pomoci funkce popen vrati data v pozadovanem tvaru.
+	Zminovany retezec:
+	\newline
+	\begin{sloppypar}
+		\begin{lstlistings}[breaklines]
+			string command = "lsof -Pnl +M -i | grep ESTABLISHED | grep ";
+			command += args.filter;  // pridani filtru na pozadovane aplikace 
+			command += " | tr -s \" \" | cut -d\" \" -f 8,9,1 | awk '{ print $2 \" \" $3 \" \" $1}'";  // vyber pozadovanych sloupcu (nazev appky, IP, protokol) + prehazeni v pozadovanem poradi
+			command += " | sed -r \"s/\\]|\\[|\\->/ /g\" | ";  // odmazani prebytecnych znaku + rozdeleni portu od IP v IPv6
+			command += "sed -r \"s/(\\.[[:digit:]]+):/\\1 /g\" | "; // rozdeleni portu od IP v IPv4
+			command += "sed -r \"s/ :/ /g\" | tr -s \" \" | uniq -u";
+		\end{lstlistings}
+	\end{sloppypar}
+	Retezec je rozdeleny z duvodu prehlednosti a moznosti okomentovani jednotlivych casti. Po vytvoreni tohoto retezce zacina nekonecny cyklus. Na zacatku cyklu se vola drive zminovana funkce popen, ktera za pomoci vytvoreneho retezce v promenne \emph{command} vrati data v pozadovanem tvaru. Data jsou ulozena v promenne \emph{str} jako jeden celek. Tato data musime rozbit na jednotlive radky a ulozit do vectoru. K tomu slouzi jiz zminovana funkce getLine(), ktera se vola do doby, nez je promenna \emph{str} prazdna. Jednotlive vysledky teto funkce se ukladaji do vectoru \emph{toProcess}, ktery slouzi pouze jako pomocna promenna. Vysledek, ktery se bude posilat na syslog server a stdout bude ulozen ve vectoru \emph{result}. Pokud je \emph{result} prazdny (prvni pruchod nebo v predchozim pruchodu nebylo zadne spojeni), pak se obsah \emph{toProcess} rovnou ulozi do \emph{result}. Pokud prazdny neni, tak se spusti kontrola jednotlivych prvku. Pokud je nejaky zaznam v \emph{result} ktery neni v \emph{toProcess}, tak je vymazan. Pokud je stejny zaznam v obou vectorech, pak je vymazan z \emph{toProcess}. Pokud kontrolovany zaznam neni v \emph{result}, pak se zachova v \emph{toProcess}. Po ukonceni teto kontroly se zbyly obsah \emph{toProcess} ulozi do \emph{result} a vypisi se vsechny nove pridane prvky. 
+
+	\subsection{Knihovny}
+
+	V programu jsou pouzity nasledujici knihovny:
+	\begin{sloppypar}
+	stdio.h, stdlib.h, stdbool.h, cstring, iostream, sstream, ctype.h, vector, sys/socket.h, netinet/in.h, arpa/inet.h, netdb.h, unistd.h
+	\end{sloppypar}
+
+	\subsection{Preklad programu}
+
+	Preklad je provaden prikazem:
+	\begin{sloppypar}
+		\begin{lstlistings}[breaklines]
+			g++ appdetector.cpp -o appdetector
+		\end{lstlistings}
+	\end{sloppypar}
+
+	\section{Pouziti aplikace}
+
+	Spusteni:
+
+	\textbf{./appdetector [-s IPaddress] [-f APP] [-i interval]}
+
+	Priklad:
+
+	./appdetector -s 127.0.0.1 -f "chrome" -i 10
+
+	Mozny vystup (stdout, na syslog stejne akorat bez znaku konce radku):
+
+	\begin{sloppypar}
+		\begin{lstlistings}[breaklines]
+			TCP 10.0.0.36 50862 31.13.84.36 443 chrome
+			TCP 10.0.0.36 38829 31.13.93.7 443 chrome
+			TCP 10.0.0.36 59914 64.233.184.189 443 chrome
+			TCP 10.0.0.36 60583 31.13.84.8 443 chrome
+			TCP 10.0.0.36 44137 64.233.166.188 5228 chrome
+		\end{lstlistings}
+	\end{sloppypar}
+
+	\section{Metriky kodu}
+
+	Pocet souboru: 2 (appdetector.cpp, Makefile)
+	Pocet radku kodu: 388
+	Velikost binarky: 40 960 bytů
+
+	\begin{thebibliography}{9}
+  	\bibitem{bsdsocketprogramming} 
+  	M. Tim Jones.
+  	\textit{BSD Sockets Programming From a Multi-Language Perspective}. 
+  	Charles River, Massachusetts, 2003.

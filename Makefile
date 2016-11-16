@@ -1,8 +1,8 @@
 CC = g++ 
-NAME = ISA.cpp
+NAME = appdetector.cpp
 RESULT = appdetector
 LOGIN = xhaisv00
-FILES = Makefile ISA.cpp
+FILES = Makefile appdetector.cpp
 
 $(RESULT): $(NAME)
 	$(CC) $(NAME) -o $(RESULT)

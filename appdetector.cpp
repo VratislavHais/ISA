@@ -306,18 +306,14 @@ string getLine(string *str) {
 **/
 
 bool isLocalhost(string str) {
-	size_t spaceIndex, secondSpaceIndex;
-	spaceIndex = str.find(" ");
-	secondSpaceIndex = str.find(" ", spaceIndex);
-	if (!strcmp(str.substr(spaceIndex, secondSpaceIndex).c_str(), "127.0.0.1")) {
-	    return true;
+	size_t found;
+	found = str.find("127.0.0.1");
+	if (found != string::npos) {
+		return true;
 	}
-	spaceIndex = str.find(" ", secondSpaceIndex);
-	secondSpaceIndex = str.find(" ", spaceIndex);
-	if (!strcmp(str.substr(spaceIndex, secondSpaceIndex).c_str(), "127.0.0.1")) {
-	    return true;
+	else {
+		return false;
 	}
-	return false;
 }
 
 int main(int argc, char *argv[]) {
