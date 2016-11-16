@@ -7,7 +7,7 @@
 \usepackage{listigns}
 \DeclareUnicodeCharacter{00A0}{ }
 
-\title{Detekce aplikaci tvorici sitovy provoz}
+\title{Detekce aplikací tvořící síťový provoz}
 \date{2016-11-14}
 \author{Vratislav Hais, xhaisv00@stud.fit.vutbr.cz}
 
@@ -24,13 +24,13 @@
 
 		\begin{center}
 			\large
-			\textsc{Vysoke Uceni Technicke v Brne}
-			\textsc{Fakulta Informacnich Technologii}
+			\textsc{Vysoke Učení Technické v Brně}
+			\textsc{Fakulta Informačních Technologií}
 			\vspace{2in}
 		\end{center}
 		{
 			\huge
-			Detekce aplikaci tvorici sitovy provoz
+			Detekce aplikací tvořící síťový provoz
 		}
 	\end{center}
 
@@ -48,27 +48,27 @@
 
 	\section{Uvod}
 
-	Tento dokument byl vytvoren jako dokumentace k projektu do predmetu ISA (Sitove aplikace a sprava siti).
-	Zakladem programu je pouziti prikazu lsof (\emph{lsof -Pnl +M -i}). Vysledek lsofu je pomoci shellovskych prikazu a regularnich vyrazu zpracovan do pozadovaneho tvaru, ktery se bude posilat na syslog server. Komunikace se syslog serverem je zajistena pomoci BSD socketu. Poslane zpravy jsou kontrolovany utilitou netcat (\emph{nc -l -p514}).
+	Tento dokument byl vytvořen jako dokumentace k projektu do předmětu ISA (Síťové aplikace a správa sítí).
+	Základem programu je použití příkazu lsof (\emph{lsof -Pnl +M -i}). Výsledek lsofu je pomocí shellovských příkazů a regularních výrazů zpracován do požadovaného tvaru, který se bude posílat na syslog server. Komunikace se syslog serverem je zajištěna pomocí BSD socketu. Poslané zprávy jsou kontrolovány utilitou netcat (\emph{nc -l -p514}).
 
 	\section{BSD}
 
-	BSD sockety jsou API pro komunikujici procesy. Jedna se o abstraktni datovou strukturu obsahujici potrebne udaje pro komunikaci. Pro vytvoreni socketu je potreba znat IP adresu a port, na kterem bude provadena komunikace.
+	BSD sockety jsou API pro komunikujíci procesy. Jedná se o abstraktní datovou strukturu obsahujíci potřebné údaje pro komunikaci. Pro vytvoření socketu je potřeba znát IP adresu a port, na kterém bude prováděna komunikace.
 
-	\subsection{Funkce pro praci s BSD sockety}
+	\subsection{Funkce pro práci s BSD sockety}
 
 	\begin{itemize}
-	\item socket() - vytvoreni noveho socketu. Je mozne vytvorit ruzne druhy socketu, coz se upresnuje v parametru funkce
-	\item bind() - prideli adresu specifikovanou v \emph{addr} k socketu. Tradicne se teto operaci prezdiva "pojmenovani socketu"
-	\item listen() - pouzivano na strane serveru. Prepne TCP socket do naslouchaciho modu
-	\item accept() - pouzivano na strane serveru. Prijme obdrzeny pokus o pripojeni
-	\item connect() - pouzivano na strane klienta. Prideli socketu volny port. V pripade TCP socketu se pokusi o navazani spojeni
-	\item send(), sendto(), recv(), recvfrom(), write(), read() - pouzivaji se pro posilani/prijimani dat
-	\item close() - v pripade TCP socketu ukonci spojeni. V jinem pripade uvolni systemem pridelenou pamet
-	\item gethostbyname(), gethostbyaddr() - na zaklade jmena/ip adresy vraci informace potrebne k naplneni struktury \emph{hostent} potrebne k navazani spojeni
-	\item select() - cekani na 1 nebo vic poskytnutych socketu az budou pripraveny ke cteni, zapisu nebo zda maji error
-	\item getsockopt() - vraci hodnotu pozadovaneho prepinace zadaneho socketu
-	\item setsockopt() - nastavi pozadovanou hodnotu prepinace zadaneho socketu
+	\item socket() - vytvoření nového socketu. Je možné vytvořit různé druhy socketu, což se upřesňuje v parametru funkce
+	\item bind() - přidělí adresu specifikovanou v \emph{addr} k socketu. Tradičně se této operaci přezdívá "pojmenování socketu"
+	\item listen() - používáno na straně serveru. Přepne TCP socket do naslouchacího módu
+	\item accept() - používáno na straně serveru. Přijme obdržený pokus o připojení
+	\item connect() - používáno na straně klienta. Přidělí socketu volný port. V případě TCP socketu se pokusí o navázání spojení
+	\item send(), sendto(), recv(), recvfrom(), write(), read() - používají se pro posílání/přijímání dat
+	\item close() - v případě TCP socketu ukončí spojení. V jiném případě uvolní systémem přidělenou paměť
+	\item gethostbyname(), gethostbyaddr() - na základě jména/ip adresy vrací informace potřebné k naplnění struktury \emph{hostent} potřebné k navázání spojení
+	\item select() - čekání na 1 nebo víc poskytnutých socketů až budou připraveny ke čtení, zápisu nebo zda mají error
+	\item getsockopt() - vrací hodnotu požadovaného přepínače zadaného socketu
+	\item setsockopt() - nastaví požadovanou hodnotu přepínače zadaného socketu
 	\end{itemize}
 
 	\section{Syslog}
@@ -82,51 +82,51 @@
 
 	\section{lsof}
 
-	\emph{lsof} je prikaz vypisujici seznam vsech otevrenych souboru, procesu a pripojeni.
+	\emph{lsof} je příkaz vypisující seznam všech otevřených souborů, procesů a připojení.
 
 	\section{netcat}
 
-	Prikaz \emph{netcat} (nebo take \emph{nc}) je počítačoý program sloužící jako nástroj pro zápis a čtení ze TCP nebo UDP spojení.
+	Příkaz \emph{netcat} (nebo také \emph{nc}) je počítačoý program sloužící jako nástroj pro zápis a čtení ze TCP nebo UDP spojení.
 
 	\section{Implementace}
 
-	Aplikace je naprogramovana v jazyce C++ a je spustitelna na operacnim systemu Linux.
+	Aplikace je naprogramovaná v jazyce C++ a je spustitelná na operačním systému Linux.
 
 	\subsection{Argumenty}
 
-	Uzivatel muze spustit aplikaci s libovolnym poradim argumentu. Toho je docileno cyklem, ktery zjistuje, o ktery argument se momentalne jedna a ulozi nasledujici hodnotu do struktury s argumenty. Pred ulozenim do struktury se kontroluje validita hodnoty, tzn ze zda se opravdu jedna o cislo (v pripade prepinace -i) nebo IP adresu (v pripade prepinace -s).
+	Uživatel může spustit aplikaci s libovolným pořadím argumentu. Toho je docíleno cyklem, ktery zjišťuje, o který argument se momentálně jedná a uloží následující hodnotu do struktury s argumenty. Před uložením do struktury se kontroluje validita hodnoty, tzn že zda se opravdu jedná o číslo (v případě přepínače -i) nebo IP adresu (v případě přepínače -s).
 	\begin{itemize}
-		\item -s parametr nasledovan IP adresou urcuje, na jake adrese bezi syslog server
-		\item -f parametr nasledovan retezcem obsahujicim nazvy aplikaci, ktere ma uzivatel zajem sledovat
-		\item -i parametr nasledovan cislem urcuje, v jakem intervalu se bude aktualizovat vypis
-		\item -h, --help je samostatny parametr, ktery vypise napovedu k programu
+		\item -s parametr následován IP adresou určuje, na jaké adrese běží syslog server
+		\item -f parametr následován řetězcem obsahujícím názvy aplikací, které má uživatel zájem sledovat
+		\item -i parametr následován číslem určuje, v jakém intervalu se bude aktualizovat výpis
+		\item -h, --help je samostatný parametr, který vypíše nápovědu k programu
 	\end{itemize}
-	Parametry -s, -f, -i jsou povinne. Pokud uzivatel nezada nektery z nich, tak se program ukonci s chybou.
+	Parametry -s, -f, -i jsou povinné. Pokud uživatel nezadá některý z nich, tak se program ukončí s chybou.
 
 	\subsection{funkce isNum() a isHexa()}
 
-	Pomocne funkce slouzici pro kontrolu, zda je zkoumany retezec slozen z cisel desitkove soustavy (funkce isNum()) nebo z hexadecimalnich znaku (funkce isHexa())
+	Pomocné funkce sloužící pro kontrolu, zda je zkoumaný řetězec složen z čísel desítkové soustavy (funkce isNum()) nebo z hexadecimálních znaků (funkce isHexa())
 
 	\subsection{funkce checkIp()}
 
-	Jedna se o pomocnou funkci pri kontrole argumentu. Kdyz se kontroluje prepinac -s, zavola se tato funkce a preda se ji hodnota nasledovana za prepinacem. Funkce rozhodne, zda se jedna o IPv4 nebo IPv6, nastavi priznak ve strukture a podle vysledku zavola funkci checkIPv4() nebo checkIPv6(). Tyto funkce zkontroluji validitu zadane IP adresy. Pokud je adresa validni, tak se ulozi do struktury a pokracuje se zpracovavanim ostatnich argumentu.
+	Jedná se o pomocnou funkci při kontrole argumentu. Když se kontroluje přepínač -s, zavolá se tato funkce a předá se ji hodnota následovaná za přepínačem. Funkce rozhodne, zda se jedna o IPv4 nebo IPv6, nastaví příznak ve struktuře a podle výsledku zavolá funkci checkIPv4() nebo checkIPv6(). Tyto funkce zkontrolují validitu zadane IP adresy. Pokud je adresa validní, tak se uloží do struktury a pokračuje se zpracováváním ostatních argumentů.
 
 	\subsection{funkce connection()}
 
-	Funkce obstaravajici pripojeni k syslog serveru. Funkce vytvori socket, ktery se bude pouzivat k posilani dat na syslog server.
+	Funkce obstarávající připojení k syslog serveru. Funkce vytvoří socket, který se bude používat k posílání dat na syslog server.
 
 	\subsection{funkce getLine()}
 
-	Pomocna funkce, ktera vraci prvni radek ze zadaneho retezce. Funkce je destruktivni, tudiz je vraceny radek zaroven z puvodniho retezce vymazan.
+	Pomocná funkce, která vrací první řádek ze zadaného řetězce. Funkce je destruktivní, tudíž je vrácený řádek zároveň z původního řetězce vymazán.
 
 	\subsection{funkce isLocalhost()}
 
-	Funkce zkouma, zda je v zadanem retezci vyskyt localhostu. Pokud ano, vraci hodnotu true.
+	Funkce zkoumá, zda je v zadaném řetězci výskyt localhostu. Pokud ano, vrací hodnotu true.
 
 	\subsection{funkce main()}
 
-	Zde se odehrava veskera cinnost. Na zacatku funkce se vytvori retezec, ktery za pomoci funkce popen vrati data v pozadovanem tvaru.
-	Zminovany retezec:
+	Zde se odehrává veškerá činnost. Na začátku funkce se vytvoří řetězec, který za pomocí funkce popen vrátí data v požadovaném tvaru.
+	Zmiňovaný řetězec:
 	\newline
 	\begin{sloppypar}
 		\begin{lstlistings}[breaklines]
@@ -138,35 +138,35 @@
 			command += "sed -r \"s/ :/ /g\" | tr -s \" \" | uniq -u";
 		\end{lstlistings}
 	\end{sloppypar}
-	Retezec je rozdeleny z duvodu prehlednosti a moznosti okomentovani jednotlivych casti. Po vytvoreni tohoto retezce zacina nekonecny cyklus. Na zacatku cyklu se vola drive zminovana funkce popen, ktera za pomoci vytvoreneho retezce v promenne \emph{command} vrati data v pozadovanem tvaru. Data jsou ulozena v promenne \emph{str} jako jeden celek. Tato data musime rozbit na jednotlive radky a ulozit do vectoru. K tomu slouzi jiz zminovana funkce getLine(), ktera se vola do doby, nez je promenna \emph{str} prazdna. Jednotlive vysledky teto funkce se ukladaji do vectoru \emph{toProcess}, ktery slouzi pouze jako pomocna promenna. Vysledek, ktery se bude posilat na syslog server a stdout bude ulozen ve vectoru \emph{result}. Pokud je \emph{result} prazdny (prvni pruchod nebo v predchozim pruchodu nebylo zadne spojeni), pak se obsah \emph{toProcess} rovnou ulozi do \emph{result}. Pokud prazdny neni, tak se spusti kontrola jednotlivych prvku. Pokud je nejaky zaznam v \emph{result} ktery neni v \emph{toProcess}, tak je vymazan. Pokud je stejny zaznam v obou vectorech, pak je vymazan z \emph{toProcess}. Pokud kontrolovany zaznam neni v \emph{result}, pak se zachova v \emph{toProcess}. Po ukonceni teto kontroly se zbyly obsah \emph{toProcess} ulozi do \emph{result} a vypisi se vsechny nove pridane prvky. 
+	Řetězec je rozdělený z důvodu přehlednosti a možnosti okomentování jednotlivých častí. Po vytvoření tohoto řetězce začíná nekonečný cyklus. Na začátku cyklu se volá dříve zmiňovaná funkce popen, která za pomoci vytvořeného řetězce v proměnné \emph{command} vrátí data v požadovaném tvaru. Data jsou uložena v proměnné \emph{str} jako jeden celek. Tato data musíme rozbít na jednotlivé řádky a uložit do vectoru. K tomu slouží již zmiňovaná funkce getLine(), která se volá do doby, než je proměnná \emph{str} prázdná. Jednotlivé výsledky této funkce se ukládají do vectoru \emph{toProcess}, který slouží pouze jako pomocná proměnná. Výsledek, který se bude posílat na syslog server a stdout bude uložen ve vectoru \emph{result}. Pokud je \emph{result} prázdný (první průchod nebo v předchozím průchodu nebylo žádné spojení), pak se obsah \emph{toProcess} rovnou uloží do \emph{result}. Pokud prázdný není, tak se spustí kontrola jednotlivých prvků. Pokud je nějaký záznam v \emph{result} který není v \emph{toProcess}, tak je vymazán. Pokud je stejný záznam v obou vectorech, pak je vymazán z \emph{toProcess}. Pokud kontrolovaný záznam není v \emph{result}, pak se zachová v \emph{toProcess}. Po ukončení této kontroly se zbylý obsah \emph{toProcess} uloží do \emph{result} a vypíší se všechny nově přidané prvky. 
 
 	\subsection{Knihovny}
 
-	V programu jsou pouzity nasledujici knihovny:
+	V programu jsou použity následující knihovny:
 	\begin{sloppypar}
 	stdio.h, stdlib.h, stdbool.h, cstring, iostream, sstream, ctype.h, vector, sys/socket.h, netinet/in.h, arpa/inet.h, netdb.h, unistd.h
 	\end{sloppypar}
 
-	\subsection{Preklad programu}
+	\subsection{Překlad programu}
 
-	Preklad je provaden prikazem:
+	Překlad je prováděn příkazem:
 	\begin{sloppypar}
 		\begin{lstlistings}[breaklines]
 			g++ appdetector.cpp -o appdetector
 		\end{lstlistings}
 	\end{sloppypar}
 
-	\section{Pouziti aplikace}
+	\section{Použití aplikace}
 
-	Spusteni:
+	Spuštění:
 
 	\textbf{./appdetector [-s IPaddress] [-f APP] [-i interval]}
 
-	Priklad:
+	Příklad:
 
 	./appdetector -s 127.0.0.1 -f "chrome" -i 10
 
-	Mozny vystup (stdout, na syslog stejne akorat bez znaku konce radku):
+	Možný výstup (stdout, na syslog stejně, akorát bez znaku konce řádku):
 
 	\begin{sloppypar}
 		\begin{lstlistings}[breaklines]
@@ -178,11 +178,11 @@
 		\end{lstlistings}
 	\end{sloppypar}
 
-	\section{Metriky kodu}
+	\section{Metriky kódu}
 
-	Pocet souboru: 2 (appdetector.cpp, Makefile)
-	Pocet radku kodu: 388
-	Velikost binarky: 40 960 bytů
+	Počet souborů: 2 (appdetector.cpp, Makefile)
+	Počet řádků kódu: 388
+	Velikost binárky: 40 960 bytů
 
 	\begin{thebibliography}{9}
   	\bibitem{bsdsocketprogramming} 
