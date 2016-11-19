@@ -208,6 +208,7 @@ int argParse(int argc, char **argv, ARGS &args) {
 			while(index != string::npos) {
 				args.filter.replace(index, 1, "\\|");
 				index = args.filter.find(",");
+				cout << args.filter;
 			}
 		}
 		else if (!strcmp(argv[1], "--help") || !strcmp(argv[1], "-h")) {
@@ -317,6 +318,7 @@ bool isLocalhost(string str) {
 }
 
 int main(int argc, char *argv[]) {
+	cout << "here";
 	int sock, resIndex, index, toSend;
 	char buff[512];
 	bool found;
@@ -331,9 +333,9 @@ int main(int argc, char *argv[]) {
 	if (connection(args.ipAddress, &sock, args.ipv4)) {
 		return EXIT_FAILURE;
 	}
-	string command = "lsof -Pnl +M -i | grep ESTABLISHED | grep ";
+	string command = "lsof -Pnl +M -i | grep ESTABLISHED | grep \"";
 	command += args.filter;  // pridani filtru na pozadovane aplikace 
-	command += " | tr -s \" \" | cut -d\" \" -f 8,9,1 | awk '{ print $2 \" \" $3 \" \" $1}'";  // vyber pozadovanych sloupcu (nazev appky, IP, protokol) + prehazeni v pozadovanem poradi
+	command += "\" | tr -s \" \" | cut -d\" \" -f 8,9,1 | awk '{ print $2 \" \" $3 \" \" $1}'";  // vyber pozadovanych sloupcu (nazev appky, IP, protokol) + prehazeni v pozadovanem poradi
 	command += " | sed -r \"s/\\]|\\[|\\->/ /g\" | ";  // odmazani prebytecnych znaku + rozdeleni portu od IP v IPv6
 	command += "sed -r \"s/(\\.[[:digit:]]+):/\\1 /g\" | "; // rozdeleni portu od IP v IPv4
 	command += "sed -r \"s/ :/ /g\" | tr -s \" \" | uniq -u";

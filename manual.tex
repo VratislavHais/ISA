@@ -1,11 +1,16 @@
 \documentclass[a4paper]{article}
 
 \usepackage[utf8]{inputenc}
-\usepackage[main=czech,english]{babel}
+\usepackage[main=czech]{babel}
 \usepackage{graphicx}
 \usepackage{xspace}
-\usepackage{listigns}
+\usepackage{listings, lstautogobble}
 \DeclareUnicodeCharacter{00A0}{ }
+
+\lstset{autogobble=true,
+    basicstyle=\ttfamily,
+    keywordstyle=\bfseries,
+    showstringspaces=false}
 
 \title{Detekce aplikací tvořící síťový provoz}
 \date{2016-11-14}
@@ -37,13 +42,10 @@
 	\vspace*{\fill}
 	{
 		\large
-		\foreignlanguage{english}{Autor: Vratislav Hais, xhaisv00}
+		\foreignlanguage{czech}{Autor: Vratislav Hais, xhaisv00}
 	}
 
-
-	\newpage
 	\pagenumbering{arabic}
-	\tableofcontents
 	\newpage
 
 	\section{Uvod}
@@ -56,19 +58,18 @@
 	BSD sockety jsou API pro komunikujíci procesy. Jedná se o abstraktní datovou strukturu obsahujíci potřebné údaje pro komunikaci. Pro vytvoření socketu je potřeba znát IP adresu a port, na kterém bude prováděna komunikace.
 
 	\subsection{Funkce pro práci s BSD sockety}
-
 	\begin{itemize}
-	\item socket() - vytvoření nového socketu. Je možné vytvořit různé druhy socketu, což se upřesňuje v parametru funkce
-	\item bind() - přidělí adresu specifikovanou v \emph{addr} k socketu. Tradičně se této operaci přezdívá "pojmenování socketu"
-	\item listen() - používáno na straně serveru. Přepne TCP socket do naslouchacího módu
-	\item accept() - používáno na straně serveru. Přijme obdržený pokus o připojení
+	\item socket() vytvoření nového socketu. Je možné vytvořit různé druhy socketu, což se upřesňuje v parametru funkce
+	\item bind() přidělí adresu specifikovanou v \emph{addr} k socketu. Tradičně se této operaci přezdívá pojmenování socketu
+	\item listen() používáno na straně serveru. Přepne TCP socket do naslouchacího módu
+	\item accept() používáno na straně serveru. Přijme obdržený pokus o připojení
 	\item connect() - používáno na straně klienta. Přidělí socketu volný port. V případě TCP socketu se pokusí o navázání spojení
 	\item send(), sendto(), recv(), recvfrom(), write(), read() - používají se pro posílání/přijímání dat
-	\item close() - v případě TCP socketu ukončí spojení. V jiném případě uvolní systémem přidělenou paměť
-	\item gethostbyname(), gethostbyaddr() - na základě jména/ip adresy vrací informace potřebné k naplnění struktury \emph{hostent} potřebné k navázání spojení
-	\item select() - čekání na 1 nebo víc poskytnutých socketů až budou připraveny ke čtení, zápisu nebo zda mají error
-	\item getsockopt() - vrací hodnotu požadovaného přepínače zadaného socketu
-	\item setsockopt() - nastaví požadovanou hodnotu přepínače zadaného socketu
+	\item close() v případě TCP socketu ukončí spojení. V jiném případě uvolní systémem přidělenou paměť
+	\item gethostbyname(), gethostbyaddr() na základě jména/ip adresy vrací informace potřebné k naplnění struktury \emph{hostent} potřebné k navázání spojení
+	\item select() čekání na 1 nebo víc poskytnutých socketů až budou připraveny ke čtení, zápisu nebo zda mají error
+	\item getsockopt() vrací hodnotu požadovaného přepínače zadaného socketu
+	\item setsockopt() nastaví požadovanou hodnotu přepínače zadaného socketu
 	\end{itemize}
 
 	\section{Syslog}
@@ -89,12 +90,14 @@
 	Příkaz \emph{netcat} (nebo také \emph{nc}) je počítačoý program sloužící jako nástroj pro zápis a čtení ze TCP nebo UDP spojení.
 
 	\section{Implementace}
-
+	\begin{sloppypar}
 	Aplikace je naprogramovaná v jazyce C++ a je spustitelná na operačním systému Linux.
+	\end{sloppypar}
 
 	\subsection{Argumenty}
-
+	\begin{sloppypar}
 	Uživatel může spustit aplikaci s libovolným pořadím argumentu. Toho je docíleno cyklem, ktery zjišťuje, o který argument se momentálně jedná a uloží následující hodnotu do struktury s argumenty. Před uložením do struktury se kontroluje validita hodnoty, tzn že zda se opravdu jedná o číslo (v případě přepínače -i) nebo IP adresu (v případě přepínače -s).
+	\end{sloppypar}
 	\begin{itemize}
 		\item -s parametr následován IP adresou určuje, na jaké adrese běží syslog server
 		\item -f parametr následován řetězcem obsahujícím názvy aplikací, které má uživatel zájem sledovat
@@ -108,9 +111,9 @@
 	Pomocné funkce sloužící pro kontrolu, zda je zkoumaný řetězec složen z čísel desítkové soustavy (funkce isNum()) nebo z hexadecimálních znaků (funkce isHexa())
 
 	\subsection{funkce checkIp()}
-
+	\begin{sloppypar}
 	Jedná se o pomocnou funkci při kontrole argumentu. Když se kontroluje přepínač -s, zavolá se tato funkce a předá se ji hodnota následovaná za přepínačem. Funkce rozhodne, zda se jedna o IPv4 nebo IPv6, nastaví příznak ve struktuře a podle výsledku zavolá funkci checkIPv4() nebo checkIPv6(). Tyto funkce zkontrolují validitu zadane IP adresy. Pokud je adresa validní, tak se uloží do struktury a pokračuje se zpracováváním ostatních argumentů.
-
+	\end{sloppypar}
 	\subsection{funkce connection()}
 
 	Funkce obstarávající připojení k syslog serveru. Funkce vytvoří socket, který se bude používat k posílání dat na syslog server.
@@ -124,21 +127,21 @@
 	Funkce zkoumá, zda je v zadaném řetězci výskyt localhostu. Pokud ano, vrací hodnotu true.
 
 	\subsection{funkce main()}
-
-	Zde se odehrává veškerá činnost. Na začátku funkce se vytvoří řetězec, který za pomocí funkce popen vrátí data v požadovaném tvaru.
-	Zmiňovaný řetězec:
-	\newline
 	\begin{sloppypar}
-		\begin{lstlistings}[breaklines]
+	Zde se odehrává veškerá činnost. Na začátku funkce se vytvoří řetězec, který za pomocí funkce popen vrátí data v požadovaném tvaru.
+	\newline
+	Zmiňovaný řetězec:
+	%\newline
+		\begin{lstlisting}[breaklines]
 			string command = "lsof -Pnl +M -i | grep ESTABLISHED | grep ";
 			command += args.filter;  // pridani filtru na pozadovane aplikace 
 			command += " | tr -s \" \" | cut -d\" \" -f 8,9,1 | awk '{ print $2 \" \" $3 \" \" $1}'";  // vyber pozadovanych sloupcu (nazev appky, IP, protokol) + prehazeni v pozadovanem poradi
 			command += " | sed -r \"s/\\]|\\[|\\->/ /g\" | ";  // odmazani prebytecnych znaku + rozdeleni portu od IP v IPv6
 			command += "sed -r \"s/(\\.[[:digit:]]+):/\\1 /g\" | "; // rozdeleni portu od IP v IPv4
 			command += "sed -r \"s/ :/ /g\" | tr -s \" \" | uniq -u";
-		\end{lstlistings}
-	\end{sloppypar}
+		\end{lstlisting}
 	Řetězec je rozdělený z důvodu přehlednosti a možnosti okomentování jednotlivých častí. Po vytvoření tohoto řetězce začíná nekonečný cyklus. Na začátku cyklu se volá dříve zmiňovaná funkce popen, která za pomoci vytvořeného řetězce v proměnné \emph{command} vrátí data v požadovaném tvaru. Data jsou uložena v proměnné \emph{str} jako jeden celek. Tato data musíme rozbít na jednotlivé řádky a uložit do vectoru. K tomu slouží již zmiňovaná funkce getLine(), která se volá do doby, než je proměnná \emph{str} prázdná. Jednotlivé výsledky této funkce se ukládají do vectoru \emph{toProcess}, který slouží pouze jako pomocná proměnná. Výsledek, který se bude posílat na syslog server a stdout bude uložen ve vectoru \emph{result}. Pokud je \emph{result} prázdný (první průchod nebo v předchozím průchodu nebylo žádné spojení), pak se obsah \emph{toProcess} rovnou uloží do \emph{result}. Pokud prázdný není, tak se spustí kontrola jednotlivých prvků. Pokud je nějaký záznam v \emph{result} který není v \emph{toProcess}, tak je vymazán. Pokud je stejný záznam v obou vectorech, pak je vymazán z \emph{toProcess}. Pokud kontrolovaný záznam není v \emph{result}, pak se zachová v \emph{toProcess}. Po ukončení této kontroly se zbylý obsah \emph{toProcess} uloží do \emph{result} a vypíší se všechny nově přidané prvky. 
+	\end{sloppypar}
 
 	\subsection{Knihovny}
 
@@ -151,9 +154,9 @@
 
 	Překlad je prováděn příkazem:
 	\begin{sloppypar}
-		\begin{lstlistings}[breaklines]
+		\begin{lstlisting}[breaklines]
 			g++ appdetector.cpp -o appdetector
-		\end{lstlistings}
+		\end{lstlisting}
 	\end{sloppypar}
 
 	\section{Použití aplikace}
@@ -169,23 +172,21 @@
 	Možný výstup (stdout, na syslog stejně, akorát bez znaku konce řádku):
 
 	\begin{sloppypar}
-		\begin{lstlistings}[breaklines]
+		\begin{lstlisting}[breaklines]
 			TCP 10.0.0.36 50862 31.13.84.36 443 chrome
 			TCP 10.0.0.36 38829 31.13.93.7 443 chrome
 			TCP 10.0.0.36 59914 64.233.184.189 443 chrome
 			TCP 10.0.0.36 60583 31.13.84.8 443 chrome
 			TCP 10.0.0.36 44137 64.233.166.188 5228 chrome
-		\end{lstlistings}
+		\end{lstlisting}
 	\end{sloppypar}
 
 	\section{Metriky kódu}
 
 	Počet souborů: 2 (appdetector.cpp, Makefile)
+	\newline
 	Počet řádků kódu: 388
+	\newline
 	Velikost binárky: 40 960 bytů
 
-	\begin{thebibliography}{9}
-  	\bibitem{bsdsocketprogramming} 
-  	M. Tim Jones.
-  	\textit{BSD Sockets Programming From a Multi-Language Perspective}. 
-  	Charles River, Massachusetts, 2003.
+\end{document}
